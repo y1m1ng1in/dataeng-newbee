@@ -4,17 +4,27 @@ from confluent_kafka import Producer, Consumer, KafkaError
 import json
 from datetime import datetime
 
-from constants import CONFIG_PATH
-from helper import load_config
+from constants import config, breadcrumbs_dir
+from helper import find_data
 
+
+config = {
+    'bootstrap.servers': 'pkc-lgk0v.us-west1.gcp.confluent.cloud:9092',
+    'security.protocol': 'SASL_SSL',
+    'sasl.mechanisms': 'PLAIN',
+    'sasl.username': 'OS6ZO4C7D74HPYXP',
+    'sasl.password': 'dOqPALDZ/G7Oe/+6SHNjX3hrQjVGm+XKj4FmfE6V757Zse7TCFmFQCdzv0RBriOy',
+}
 
 delivered_records = 0
 
 
 def acked(err, msg):
     global delivered_records
+    """Delivery report handler called on
+    successful or failed delivery of message
+    """
     delivered_records += 1
-    
     print(err)
     print("Produced record to topic {} partition [{}] @ offset {}".format(msg.topic(), msg.partition(), msg.offset()))
 
@@ -41,13 +51,14 @@ def produce(topic, data):
 
 
 def main():
-    config = load_config(CONFIG_PATH)
     topic = 'C-Tran'
-    with open('data.json') as json_file:
-        data = json.load(json_file)
+    data_list = find_data(breadcrumbs_dir)
 
+    for i in data_list:
+        with open(i) as json_file:
+            data = json.load(json_file)
+        produce(topic=topic, data=data)
     
-    produce(topic=topic, data=data)
     consume(config=config, topic=topic)
 
 
@@ -79,9 +90,10 @@ def consume(config, topic, group_id = 'example', auto_offset_reset = 'earliest')
         total_count += 1
         print("Consumed record with key {} and value {}, and updated total count to {}"
                       .format(msg.key(), msg.value(), total_count))
-
+    
     consumer.close()
 
 
 if __name__ == '__main__':
     main()
+
