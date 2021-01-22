@@ -24,6 +24,13 @@ def get_data(url, retry_max, delay):
     except requests.exceptions.ConnectionError as e:
       logging("requests.exceptions.ConnectionError, retry..")
       sleep(delay)
+    except requests.exceptions.RequestException as e:
+      logging("requests.exceptions.RequestException, retry..")
+      sleep(delay)
+    except requests.exceptions.ProxyError as e:
+      logging("requests.exceptions.ProxyError, retry..")
+      sleep(delay)
+    
   logging("cannot make request to {}".format(url))  
 
 with open("{dir}/project_config.json".format(dir=DIR)) as f:
