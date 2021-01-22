@@ -4,11 +4,27 @@ import json
 import requests
 import os
 from datetime import date, datetime
+from time import sleep
 
 DIR = "/home/yl6/dataeng-project"
+# Max number of times to retrying request url
+MAX_RETRY = 10
+# Second between two requests
+RETRY_DELAY = 2
 
 def logging(msg):
   print("[{now}] {msg}".format(now=datetime.now(), msg=msg))
+
+def get_data(url, retry_max, delay):
+  for _ in range(retry_max):
+    try:
+      r = requests.get(url)
+      if r:
+        return r
+    except requests.exceptions.ConnectionError as e:
+      logging("requests.exceptions.ConnectionError, retry..")
+      sleep(delay)
+  logging("cannot make request to {}".format(url))  
 
 with open("{dir}/project_config.json".format(dir=DIR)) as f:
   config = json.load(f)
@@ -16,10 +32,9 @@ with open("{dir}/project_config.json".format(dir=DIR)) as f:
   f.close()
 
 # BreadCrumData url
-url = " http://rbi.ddns.net/getBreadCrumbData"
+url = "http://rbi.ddns.net/getBreadCrumbData"
 # Get request
-r = requests.get(url)
-
+r = get_data(url, 10, 2)
 # Parse json into dict
 dictinfo = json.loads(r.text)
 
