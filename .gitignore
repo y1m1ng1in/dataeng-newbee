@@ -1,4 +1,6 @@
 breadcrumb-data/*
 cron_output.log
+constants.py
 __pycache__
 log/*
+
