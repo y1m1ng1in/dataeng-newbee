@@ -27,7 +27,7 @@ def acked(err, msg):
         )
 
 
-def produce(config, topic, data, logger):
+def produce(config, topic, data):
     # construct producer
     producer = Producer(config)
 
@@ -50,15 +50,15 @@ def produce(config, topic, data, logger):
 
 def main():
     topic = "c-tran"
-    logger = load_logger("producer", if_file=True, if_stream=True)
+    load_logger("producer", if_file=True, if_stream=True)
 
     # load, and produce json data.
-    data_list = find_data()
+    data_list = find_data(day="2021-01-16")
     logging.info(data_list)
     for i in data_list:
         with open(i) as json_file:
             data = json.load(json_file)
-        produce(config=CONFIG, topic=topic, data=data, logger=logger)
+        produce(config=CONFIG, topic=topic, data=data)
 
 
 if __name__ == "__main__":

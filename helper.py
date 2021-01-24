@@ -1,9 +1,28 @@
 import glob, os
 from datetime import date
-from constants import breadcrumbs_dir
+import logging
+import sys
+from constants import breadcrumbs_dir, LOG_PATH
 
 
-def find_data(dir=breadcrumbs_dir):
+def find_data(day=str(date.today()), dir=breadcrumbs_dir):
     os.chdir(dir)
-    file = glob.glob("{}.json".format(str(date.today())))
+    file = glob.glob("{}.json".format(day))
     return file
+
+
+def load_logger(type, if_file=True, if_stream=True, day=str(date.today())):
+    os.makedirs(LOG_PATH, exist_ok=True)
+    log_path = os.path.join(LOG_PATH, "{}_{}.log".format(day, type))
+
+    # set loggingfile
+    logging.basicConfig(
+        format="%(message)s",
+        level=logging.INFO,
+    )
+    logger = logging.getLogger()
+    if if_stream:
+        logger.addHandler(logging.StreamHandler(sys.stdout))
+    if if_file:
+        logger.addHandler(logging.FileHandler(log_path))
+    return logger
