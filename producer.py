@@ -35,10 +35,10 @@ def produce(config, topic, data):
         # prepare message
         record_key = str(date.today())
         record_value = json.dumps(one)
-        logging.info("Producing record: {}\t{}".format(record_key, record_value))
+        #logging.info("Producing record: {}\t{}".format(record_key, record_value))
         producer.produce(topic, key=record_key, value=record_value, on_delivery=acked)
         # from previous produce() calls.
-        producer.poll(timeout=1)
+        producer.poll(timeout=0)
 
     producer.flush()
 
@@ -48,17 +48,20 @@ def produce(config, topic, data):
     )
 
 
-def main():
+def run():
     topic = "c-tran"
     load_logger("producer", if_file=True, if_stream=True)
 
     # load, and produce json data.
-    data_list = find_data(day="2021-01-16")
+    data_list = find_data(str(date.today()))
     logging.info(data_list)
     for i in data_list:
         with open(i) as json_file:
             data = json.load(json_file)
         produce(config=CONFIG, topic=topic, data=data)
+
+def main():
+    run()
 
 
 if __name__ == "__main__":
