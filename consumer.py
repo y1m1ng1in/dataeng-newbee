@@ -9,74 +9,84 @@ from load_inserts import connect, formsql, insert, insert_batch
 from constants import CONFIG, MAX_RECORDS
 
 
-def consume(config, topic, group_id="newbee", auto_offset_reset="earliest"):
-    # complete consumer
-    config["group.id"] = group_id
-    config["auto.offset.reset"] = auto_offset_reset
-    validator = Validator(None)
+class NewbeeConsumer:
+    """The consumer for all newbee's data."""
 
-    # database related
-    records = []
-    conn = connect()
-    wait_time = 0
+    def __init__(self,
+                 topic: list,
+                 batch_size=MAX_RECORDS,
+                 config=CONFIG,
+                 group_id='newbee',
+                 offset_reset='earliest',):
+        self.config = config
+        self.config['group.id'] = group_id
+        self.config['auto.offset.reset'] = offset_reset
+        self.consumer = Consumer(self.config)
 
-    # construct consumer.
-    consumer = Consumer(config)
-    consumer.subscribe([topic])
-    total_count = 0
-    saved_count = 0
+        self.topic = topic
+        self.conn = connect()
+        self.batch = list()
+        self.batch_size = batch_size
+        self.records = []
+        self.validator = Validator(None)
 
-    try:
-        while True:
-            msg = consumer.poll(1)
+    def consume(self):
+        # construct consumer.
+        self.consumer.subscribe(self.topic)
+        total_count = 0
+        saved_count = 0
 
-            if msg is None:
-                # logging.warning("Waiting for message or event/error in poll()")
-                if wait_time <= 10:
-                    wait_time += 1
-                    continue
+        try:
+            while True:
+                msg = self.consumer.poll(1)
+
+                if msg is None:
+                    # logging.warning("Waiting for message or event/error in poll()")
+                    pass
+                elif msg.error():
+                    logging.error("error: {}".format(msg.error()))
                 else:
-                    if len(records) == 0:
-                        logging.info('set')
-                    insert_batch(conn, records)
-                    #insert(conn, cmd=formsql(records))
-                    records = []
-                    wait_time = 0
-                    continue
-            elif msg.error():
-                logging.error("error: {}".format(msg.error()))
-            else:
-                total_count += 1
-                record_key    = msg.key()
-                record_value  = msg.value()
-                record_offset = msg.offset()
-                record_str    = record_value.decode('utf-8')
-                j = json.loads(record_str)
-                j, should_save = validator.validate(j)
-                if should_save:
-                    # prepare to add
-                    records.append(j)
-                    saved_count += 1
+                    total_count += 1
+                    # record_key    = msg.key()
+                    record_value = msg.value()
+                    # record_offset = msg.offset()
+                    record_str = record_value.decode('utf-8')
+                    j = json.loads(record_str)
+                    j, should_save = self.validator.validate(j)
+                    if should_save:
+                        # prepare to add
+                        self.records.append(j)
+                        saved_count += 1
 
-                logging.info(
-                    "Consumed record with key {} and value {}.".format(
-                        msg.key(), msg.value(),
+                    if len(self.records) >= self.batch_size:
+                        self.clean_batch(self.records)
+
+                    logging.info(
+                        "Consumed record with key {} and value {}.".format(
+                            msg.key(), msg.value(),
+                        )
                     )
-                )
 
-    except KeyboardInterrupt:
-        pass
-    finally:
-        logging.info("Total consume {} messages.".format(total_count))
-        consumer.close()
+        except KeyboardInterrupt:
+            pass
+        finally:
+            logging.info("Total consume {} messages.".format(total_count))
+            self.consumer.close()
 
-    return records
+        return self.records
+
+    def clean_batch(self, batch: list):
+        insert_num = len(batch)
+        insert_batch(self.conn, batch)
+        self.records = []
+        logging.info(f'{insert_num} records inserted to {self.topic}.')
 
 
 def main():
-    load_logger("consumer", if_file=True, if_stream=True)
+    load_logger("consumer", if_file=True)
 
-    record = consume(config=CONFIG, topic="c-tran")
+    consumer = NewbeeConsumer(topic=['c-tran', 'cad-avl'])
+    consumer.consume()
 
 
 if __name__ == "__main__":
