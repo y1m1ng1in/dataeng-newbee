@@ -106,6 +106,7 @@ class EventStopValidator:
         ]
         for fn in fns:
             fn()
+        self.transform()
         return self.df
 
     def drop_null(self):
@@ -127,6 +128,23 @@ class EventStopValidator:
         """ Drop duplicated rows in a df
         """
         self.df = self.df.drop_duplicates()
+
+    def transform(self):
+        def format_direction(direction):
+            if direction == '0':
+                return 'Out'
+            return 'Back'
+        
+        def format_service_key(service_key):
+            if service_key == 'W':
+                return 'Weekday'
+            elif service_key == 'U':
+                return 'Sunday'
+            return 'Saturday'
+
+        self.df['service_key'] = self.df['service_key'].map(format_service_key)
+        self.df['direction'] = self.df['direction'].map(format_direction)
+
 
 
 class IntegratedValidator:
