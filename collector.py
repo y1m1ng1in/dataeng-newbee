@@ -1,5 +1,6 @@
 import pandas as pd
 import json
+import logging
 from new_validation import (
     BreadCrumbValidator,
     EventStopValidator,
@@ -14,6 +15,19 @@ class Collector:
 
         self.breadcrumb_shipped = False
         self.stop_event_shipped = False
+
+    def receive(self, item):
+        """ Consumer received a dict, and this methods identify the dict
+            type and classify to the correct storage.
+
+        :param item: received dict.
+        """
+        if len(item) == 24:
+            self.receive_stop_event(item)
+        elif len(item) == 14:
+            self.receive_breadcrumb(item)
+        else:
+            logging.error(f'Data Format Error.\n{item}')
 
     def receive_breadcrumb(self, breadcrumb_dict):
         """ Consumer received a breadcrumb dict object which has been 

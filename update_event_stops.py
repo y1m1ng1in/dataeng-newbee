@@ -49,7 +49,7 @@ def data_update():
     parser = argparse.ArgumentParser(description='Update null field in trip')
     parser.add_argument('--data', type=str, help='json file')
     args = parser.parse_args()
-    
+
     with open(args.data) as f:
         data = json.load(f)
         print(data)

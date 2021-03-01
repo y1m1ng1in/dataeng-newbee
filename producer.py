@@ -60,6 +60,8 @@ class NewbeeProducer(Process):
         )
 
     def run(self):
+        """Reconstruct the same name method of Process.
+        Automatically start by start() and join()."""
         data = find_data(self.day, dir=self.data_dir)
 
         # load, and produce json data.

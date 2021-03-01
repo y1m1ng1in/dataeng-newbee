@@ -1,13 +1,8 @@
 #!/usr/bin/env python3
 import psycopg2
 import psycopg2.extras
-import csv
-import re
 import logging
-from datetime import datetime
-import time
 from constants import DBname, DBuser, DBpwd, TableName
-from helper import load_logger
 
 
 def formsql(data: list):
@@ -50,10 +45,10 @@ def insert_batch(conn, records):
         psycopg2.extras.execute_batch(cursor,f"""
         INSERT INTO {TableName[1]} VALUES (
         %(EVENT_NO_TRIP)s, -- trip id
-        NULL,
+        %(route_number),
         %(VEHICLE_ID)s,
-        NULL,
-        NULL
+        %(service_key),
+        %(direction)
         )
         ON CONFLICT DO NOTHING;
         """, records)
